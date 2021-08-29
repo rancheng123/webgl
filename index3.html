@@ -17,9 +17,7 @@
             是一个函数（用户在 GLSL 中写的）。
 
         作用
-            处理每个顶点时，均会被调用一次。
-
-            GPU 处理 gl_Position（投影矩阵的值）。
+            产生投影矩阵的坐标（处理每个顶点时，均会被调用一次）
 
 
     过程
@@ -49,7 +47,22 @@ attribute vec2 a_position;
 
 
 //定义统一变量
-uniform vec2 u_resolution;
+    //方式1
+        uniform vec2 u_resolution;
+
+    //方式2（结构体 定义）
+        struct SomeStruct {
+          bool value1;
+          vec2 value2;
+        };
+        uniform SomeStruct u_someThing;
+
+        /* 查询成员时
+        var someThingActiveLoc = gl.getUniformLocation(someProgram, "u_someThing.value1");
+        var someThingSomeVec2Loc = gl.getUniformLocation(someProgram, "u_someThing.value2");
+        */
+
+
 
 //声明变量（以v_ 开头， 表示变量）（顶点着色器和片段着色器 共享 相同名字和类型的变量。）
 varying vec4 v_color;
@@ -59,6 +72,9 @@ attribute vec4 a_color;
 
 
 void main() {
+
+
+
 
    // 将 像素写法 转成矩阵写法（-1到1）
        // convert the rectangle from pixels to 0.0 to 1.0
@@ -70,14 +86,15 @@ void main() {
        // convert from 0->2 to -1->+1 (clipspace)
        vec2 clipSpace = zeroToTwo - 1.0;
 
-   //gl_Position 可以设置图形位置 大小
 
-   //用于绘制每一个顶点   齐次坐标(由4个分量组成的矢量,能提高三维数据的效率)
+   //投影矩阵坐标      （齐次坐标(由4个分量组成的矢量,能提高三维数据的效率)）
    gl_Position = vec4(
         clipSpace,  // x
          0,          // y
          1           // z
       );
+
+
 
 
 
@@ -88,24 +105,43 @@ void main() {
     //方式2 (利用属性 给变量赋值)
     v_color = a_color;
 
+
+    /*
+    三种获取数据方式
+
+        1.属性（从缓冲区中获取数据， 可选类型 float，vec2，vec3，vec4，mat2，mat3 和 mat4 ）
+            如 attribute vec4 a_color;
+        2.一致变量（一直保持不变的值, 相当于常量吗？？？？）
+            如 uniform vec2 u_resolution;
+        3.纹理（从像素中得到的数据）
+    */
+
 }
 </script>
 <!--顶点着色器  end-->
 
 
-<!--片段着色器  start-->
+<!--
+    片段着色器
+        作用：为每个像素(被栅格化的)提供颜色
+            可能被调用上万次（因为像素点很多）
+
+
+start-->
 <script id="2d-fragment-shader" type="x-shader/x-fragment">
     precision mediump float;
 
-    //定义变量（顶点着色器和片段着色器 共享 相同名字和类型的变量。）
+    //多变变量（顶点着色器和片段着色器 共享 相同名字和类型的变量。）
     varying vec4 v_color;
 
     uniform vec4 u_color;
 
-    void main() {
-      //片段颜色（每个像素着色时，GPU都会调用片段着色器，决定上什么颜色。）
-       //负责填充每个像素点的颜色（因为像素点很多，可能有上万个，所以会执行上万次该函数）
+    //从纹理中获取值
+    uniform sampler2D u_texture;
 
+
+
+    void main() {
 
       //写法1 值写死
             //内置变量            （rgba）
@@ -118,12 +154,18 @@ void main() {
           gl_FragColor = v_color;
 
 
-/*
-
-
-*/
 
     }
+
+     /*
+    三种获取数据方式
+
+        1.多变变量（从顶点着色器中传递出来且被栅格化的值）
+            如 varying vec4 v_color;
+        2.一致变量（参考顶点着色器）
+
+        3.纹理（参考顶点着色器）
+    */
 </script>
 
 <!--片段着色器  end-->
@@ -191,7 +233,8 @@ void main() {
         gl.compileShader(vertexShader);
         var compileStatus = gl.getShaderParameter(vertexShader,gl.COMPILE_STATUS)
         if(!compileStatus){
-            console.err('编译失败');
+            var lastError = gl.getShaderInfoLog(vertexShader);
+            console.error("*** 编译失败 '" + vertexShader + "':" + lastError);
             return;
         }
 
@@ -397,6 +440,27 @@ void main() {
                 canvas.height /*value2*/
             );
 
+            /*
+                gl.uniform1f (floatUniformLoc, v); // for float
+                gl.uniform1fv(floatUniformLoc, [v]);   // for float or float array
+                gl.uniform2f (vec2UniformLoc,  v0, v1);// for vec2
+                gl.uniform2fv(vec2UniformLoc,  [v0, v1]);  // for vec2 or vec2 array
+                gl.uniform3f (vec3UniformLoc,  v0, v1, v2);// for vec3
+                gl.uniform3fv(vec3UniformLoc,  [v0, v1, v2]);  // for vec3 or vec3 array
+                gl.uniform4f (vec4UniformLoc,  v0, v1, v2, v4);// for vec4
+                gl.uniform4fv(vec4UniformLoc,  [v0, v1, v2, v4]);  // for vec4 or vec4 array
+
+                gl.uniform1i (intUniformLoc,   v); // for int
+                gl.uniform1iv(intUniformLoc, [v]); // for int or int array
+                gl.uniform2i (ivec2UniformLoc, v0, v1);// for ivec2
+                gl.uniform2iv(ivec2UniformLoc, [v0, v1]);  // for ivec2 or ivec2 array
+                gl.uniform3i (ivec3UniformLoc, v0, v1, v2);// for ivec3
+                gl.uniform3iv(ivec3UniformLoc, [v0, v1, v2]);  // for ivec3 or ivec3 array
+                gl.uniform4i (ivec4UniformLoc, v0, v1, v2, v4);// for ivec4
+                gl.uniform4iv(ivec4UniformLoc, [v0, v1, v2, v4]);  // for ivec4 or ivec4 array
+
+            */
+
             var colorLocation = gl.getUniformLocation(program, "u_color");
             gl.uniform4f(
                 colorLocation,
@@ -422,13 +486,7 @@ void main() {
             gl.enableVertexAttribArray(positionLocation);
 
 
-            /*
 
-
- 。
-
-
-            */
 
             //顶点属性指针
             //给该属性赋值（基于缓冲数据 和 指定规则）（每次绘制，如何基于data数组 去生成属性的值）
