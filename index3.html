@@ -44,10 +44,19 @@
 
 //vec1 vec3 vec4 是什么作用？？？？
 
-//声明变量(首字母不能是数字，不能是关键字和保留字；不能以gl_、webgl_、_webgl_开头)
+//声明属性(以a_ 开头， 表示属性)
 attribute vec2 a_position;
 
+
+//定义统一变量
 uniform vec2 u_resolution;
+
+//声明变量（以v_ 开头， 表示变量）（顶点着色器和片段着色器 共享 相同名字和类型的变量。）
+varying vec4 v_color;
+
+//定义颜色（属性）
+attribute vec4 a_color;
+
 
 void main() {
 
@@ -62,20 +71,22 @@ void main() {
        vec2 clipSpace = zeroToTwo - 1.0;
 
    //gl_Position 可以设置图形位置 大小
-   //gl_Position = vec4(clipSpace, 0, 1);
 
    //用于绘制每一个顶点   齐次坐标(由4个分量组成的矢量,能提高三维数据的效率)
    gl_Position = vec4(
-        a_position,  // x
+        clipSpace,  // x
          0,          // y
          1           // z
       );
 
 
-    /*
 
+    //方式1 (利用位置 给不同像素 赋予不同值)
+       //给自定义变量 赋值
+       v_color = gl_Position * 0.5 + 0.5;
 
-    */
+    //方式2 (利用属性 给变量赋值)
+    v_color = a_color;
 
 }
 </script>
@@ -85,6 +96,9 @@ void main() {
 <!--片段着色器  start-->
 <script id="2d-fragment-shader" type="x-shader/x-fragment">
     precision mediump float;
+
+    //定义变量（顶点着色器和片段着色器 共享 相同名字和类型的变量。）
+    varying vec4 v_color;
 
     uniform vec4 u_color;
 
@@ -98,7 +112,17 @@ void main() {
           //gl_FragColor = vec4(0, 1, 0, 1);  // green
 
       //写法2 值未写死，用变量传入
-          gl_FragColor = u_color;
+          //gl_FragColor = u_color;
+
+      //写法3 值未写死，用变量传入 (此变量 来自于 顶点着色器)
+          gl_FragColor = v_color;
+
+
+/*
+
+
+*/
+
     }
 </script>
 
@@ -319,10 +343,31 @@ void main() {
                             0, 0,
                             100, 0,
                             0, 100,
-                            10, 30,
-                            80, 20,
-                            80, 30
+                            100, 0,
+                            0, 100,
+                            100, 100
                         ]
+
+                        /*
+                        数据转为投影矩阵的步骤(由顶点着色器完成)
+
+                            1.转换（默认值200,150）、
+                                    x/200  每个x值 除以200
+                                    y/150  每个y值 除以150
+
+                            2.旋转（默认值0）、
+                            3.缩放（默认值1,1）
+                            4.转化
+
+
+
+
+                        */
+                        data = [
+                            1, -100,
+                            150,  125,
+                            -175,  100]
+
 
                         return data;
                     })()
@@ -345,9 +390,7 @@ void main() {
 
             //返回统一变量位置
             var resolutionLocation = gl.getUniformLocation(program, "u_resolution");
-            //设置统一变量的值
-            //uniform[1234][fi][v]()
-            //2f 代表需传入2个值，  4f 代表需传入4个值
+            //给统一变量赋值    （2f 代表需传入2个值，  4f 代表需传入4个值   uniform[1234][fi][v]()）
             gl.uniform2f(
                 resolutionLocation /*位置索引*/,
                 canvas.width /*value1*/,
@@ -379,16 +422,60 @@ void main() {
             gl.enableVertexAttribArray(positionLocation);
 
 
+            /*
 
-        //设置显卡取值规则（每次绘制，如何取变量）
-        gl.vertexAttribPointer(
-            positionLocation/*指定要修改的顶点属性的索引。*/,
-            2/*每个顶点属性的组成数量，必须是1，2，3或4。   几维*/,
-            gl.FLOAT/*值类型*/,
-            false, /*是否规格化*/
-            0, /*一个顶点数据占用的字节数*/
-            0,/*从哪个顶点开始取数据*/
-        )
+
+ 。
+
+
+            */
+
+            //顶点属性指针
+            //给该属性赋值（基于缓冲数据 和 指定规则）（每次绘制，如何基于data数组 去生成属性的值）
+            gl.vertexAttribPointer(
+                positionLocation/*指定要修改的顶点属性的索引。*/,
+                2/*组成数量（每几个缓冲数据组成一个顶点属性），必须是1，2，3或4。   几维*/,
+                gl.FLOAT/*值类型*/,
+                false, /*
+                    规范化标志
+                        应用于非浮点指针类型
+
+                        false 意味着该值就会被翻译为类型
+
+                            BYTE 的标示范围是       -128    到 127。
+                            UNSIGNED_BYTE         0       到 255，
+
+                                0 表示 0.0，使用 255 表示 1.0，仅需4个字节来表示顶点的每个颜色，节省 75% 的存储空间
+
+                            SHORT                 -32768  到  32767。
+
+                       true (适合用于颜色（因为颜色范围为 0.0 到 1.0）)
+
+                            BYTE 的标示范围是       -1.0    到 +1.0。
+                            UNSIGNED_BYTE         0.0     到 +1.0，
+                            SHORT                 -1.0    到 +1.0。
+
+
+
+
+
+
+                    */
+                0, /*单片数据占用多少个字节*/
+                0,/*偏移量（从缓存的哪里开始取数据）*/
+            )
+
+
+
+
+
+            var colorLocation = gl.getAttribLocation(program, "a_color");
+            gl.enableVertexAttribArray(colorLocation);
+            gl.vertexAttribPointer(colorLocation, 4, gl.FLOAT, false, 0, 0);
+
+
+
+
 
         //开始绘制
         gl.drawArrays(
