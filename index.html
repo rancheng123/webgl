@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+    <canvas id="canvas" style="width: 200px;height: 200px;border: 1px solid red;"></canvas>
+    <!--顶点着色器  start-->
+    <script id="shader-vs"  type="x-shader/x-vertex">
+        //openGL语法（glsl)
+        //在显卡上执行，确定形状的各个坐标
+
+        //声明变量
+        attribute vec3 v3Position;
+        void main(void){
+            //内置变量
+            gl_Position = vec4(v3Position, 1.0);
+
+            //vec1 vec3 vec4 是什么作用？？？？
+            //gl_Position = vec4(v3Position, 0, 1);
+        }
+    </script>
+
+
+    <!--2d 顶点着色器-->
+    <script id="2d-vertex-shader" type="x-shader/x-vertex">
+        attribute vec2 a_position;
+
+        void main() {
+          gl_Position = vec4(a_position, 0, 1);
+        }
+    </script>
+    <!--顶点着色器  end-->
+
+
+    <!--片段着色器  start-->
+    <script id="2d-fragment-shader" type="x-shader/x-fragment">
+        void main() {
+          //片段颜色（每个像素着色时，GPU都会调用片段着色器，决定上什么颜色。）
+           //负责填充每个像素点的颜色（因为像素点很多，可能有上万个，所以会执行上万次该函数）
+
+            //内置变量            （rgba）
+          gl_FragColor = vec4(0, 1, 0, 1);  // green
+        }
+
+
+
+    </script>
+    <!--片段着色器  end-->
+
+
+    <script>
+
+        window.onload = ()=>{
+            //webgl官网 https://www.khronos.org/webgl/
+
+            /*
+               webgl可操作显卡(可编程管线技术)
+
+                   基于光栅的 API
+
+                   与openGl相比:
+                       基于openGL 2.0
+                       openGL大部分功能已实现，部分功能没实现（不支持）
+                   显卡的运行过程和原理
+                       基本图元（形状）
+
+
+
+
+
+           */
+
+            var canvas = document.getElementById('canvas');
+            var gl = canvas.getContext('webgl');
+                                        //'experiance-webgl' 试用版webgl
+
+            //这个的作用是什么， 为什么会影响绘制的坐标系？？？？？？
+            //设置可视区域（在canvas 内，但是有可能比canvas区域小）
+            //gl.viewport(0,0,canvas.clientWidth, canvas.clientHeight);
+
+
+            //设置背景颜色
+                //设置清除时背景色（rgba）
+                gl.clearColor(0,255,255,1);
+                //清除（应该叫设置。为什么叫清除，不知道）
+                gl.clear(
+                    //颜色缓冲区
+                    gl.COLOR_BUFFER_BIT
+                );
+
+
+
+
+
+
+            //创建顶点着色器
+                var vertexShader = gl.createShader(
+                    //顶点着色器
+                    gl.VERTEX_SHADER
+                );
+                //给着色器 设置源代码（c++源代码）
+                gl.shaderSource(
+                    vertexShader,
+                    document.getElementById('2d-vertex-shader').innerText
+                )
+                //编译（汇编成 显卡可以执行的二进制代码）
+                gl.compileShader(vertexShader);
+                var compileStatus = gl.getShaderParameter(vertexShader,gl.COMPILE_STATUS)
+                if(!compileStatus){
+                    console.err('编译失败');
+                    return;
+                }
+
+
+
+
+
+
+
+
+
+
+            //创建分片着色器
+            var fragmentShader = gl.createShader(
+                //顶点着色器
+                gl.FRAGMENT_SHADER
+            );
+            //给着色器 设置源代码（c++源代码）
+            gl.shaderSource(
+                fragmentShader,
+                document.getElementById('2d-fragment-shader').innerText
+            )
+            //编译（汇编成 显卡可以执行的二进制代码）
+            gl.compileShader(fragmentShader);
+            var compileStatus = gl.getShaderParameter(fragmentShader,gl.COMPILE_STATUS)
+            if(!compileStatus){
+
+                var lastError = gl.getShaderInfoLog(fragmentShader);
+                console.error("*** 编译失败 '" + fragmentShader + "':" + lastError);
+                debugger
+               // gl.deleteShader(shader);
+
+                return;
+            }
+
+
+
+
+
+
+
+
+            //创建项目
+            var program = gl.createProgram();
+
+            //在项目上绑定着色器
+            gl.attachShader(program,vertexShader);
+            gl.attachShader(program,fragmentShader);
+
+            //linkProgram  作用 不明白？？？？？？？？？？？？？？？？？？？？
+            gl.linkProgram(program);
+            var linked = gl.getProgramParameter(program, gl.LINK_STATUS);
+            if (!linked) {
+                // something went wrong with the link
+                var lastError = gl.getProgramInfoLog (program);
+                console.error("Error in program linking:" + lastError);
+
+                gl.deleteProgram(program);
+                return;
+            }
+
+            //项目没有link问题  就可以使用了
+            gl.useProgram(program);
+
+
+
+
+
+
+
+
+
+
+
+
+
+            //在显卡上申请一块内存（缓冲区）
+            var buffer = gl.createBuffer();
+
+            gl.bindBuffer(
+                gl.ARRAY_BUFFER,
+
+                //可以切换缓冲区
+                buffer
+            );
+
+
+            //方案1 创建非空缓冲区， 直接设置缓冲内容
+            if(1){
+                //给buffer赋值
+                gl.bufferData(
+                    //指定buffer类型
+                    gl.ARRAY_BUFFER,            //顶点缓冲区（显存里的一块内存）
+                    //gl.ELEMENT_ARRAY_BUFFER     索引缓冲区
+                    //                            纹理缓冲区
+                    //                            帧缓冲区
+                    //                            深度缓冲区
+                    //                            颜色缓冲区
+                    //                            模板缓冲区
+
+
+
+
+
+                    //半精度浮点数
+                    //new Float16Array
+
+                    //单精度浮点数（对浮点数压缩， 减少数据量）， js 默认是双精度浮点数
+                    new Float32Array(
+                        (()=>{
+                            // webgl 坐标系， 以正中心为0,0,0起始点
+
+                            // webgl 没有矩形概念， 只能用两个三角形拼装（画三角形效率更高）
+                            //       只有点，线，面
+
+
+                            /*
+
+
+
+3D图像: 使用  投影矩阵（利用着色器来将 3D 转换为投影矩阵）  表述尺寸
+2D图像: 使用  像素                                   表述尺寸
+
+
+                            *
+                            */
+
+                            //位置信息在投影矩阵中
+                            var data = [
+                                //第1个三角形 顶点
+                                -1.0, -1.0,
+                                1.0, -1.0,
+                                -1.0,  1.0,
+
+                                //第2个三角形 顶点
+                                -1.0,  1.0,
+                                1.0, -1.0,
+                                1.0,  1.0
+                            ]
+
+                            return data;
+                        })()
+                    ),
+
+                    //静态渲染（缓冲区内容 不变）
+                    gl.STATIC_DRAW
+
+                        //动态渲染（缓冲区内容 经常变）
+                        //gl.DYNAMIC_DRAW
+
+                        //流式渲染（缓冲区内容 偶尔变， 变得次数不多）
+                        //gl.STREAM_DRAW
+                )
+            }
+
+
+
+
+
+            // look up where the vertex data needs to go.
+            var positionLocation = gl.getAttribLocation(program, "a_position");
+            gl.enableVertexAttribArray(positionLocation);
+
+            //取值绘制规则（每次绘制，如何取变量）
+            gl.vertexAttribPointer(
+                positionLocation,
+                2/*几维*/,
+                gl.FLOAT/*值类型*/,
+                false, /*是否规格化*/
+                0, /*一个顶点数据占用的字节数*/
+                0,/*从哪个顶点开始取数据*/
+            )
+
+            //开始绘制
+            gl.drawArrays(
+                gl.TRIANGLES, /*图形类型*/
+                3, /*开始的顶点位置*/
+                3, /*绘制几个顶点*/
+
+                //画第1个三角形(从第0个开始，连续画3个)
+                //0,3,
+
+                //画第2个三角形(从第3个开始，连续画3个)
+                //3,3
+            )
+
+
+
+
+
+
+
+
+
+
+            // var linkStatus = gl.getShaderParameter(vertexShader,gl.LINK_STATUS)
+            // if(!linkStatus){
+            //
+            //     //获取日志报错信息
+            //     var info = gl.getProgramInfoLog(program);
+            //     throw new Error('Could not compile WebGL program. \n\n' + info);
+            //
+            //
+            //     console.error('link失败',linkStatus);
+            //     return;
+            // }
+
+
+
+
+           // 模型矩阵
+
+           // 观察矩阵
+           // 投影矩阵
+            //视口
+
+
+            /*
+                渲染卡顿原因
+                    1. 计算量大
+                    2. 数据频繁的从内存传递到显存，传输过程比较慢
+
+            */
+
+
+
+
+            //方案2 创建空缓冲区， 后面再更新缓冲内容
+            if(0){
+                gl.bufferData(
+                    gl.ARRAY_BUFFER,
+                    //创建一个空缓冲区，只指定缓冲区size, 不给内容
+                    4/*一个浮点数4个字节*/ * 9/*9个浮点数（3个为一个坐标）*/,
+                    gl.STATIC_DRAW
+                )
+                //更新部分缓冲区数据 （节省性能）
+                gl.bufferSubData(
+                    gl.ARRAY_BUFFER,
+                    2, /*offset 偏移量*/
+
+                    //注意此处的数据size 不能大于bufferData 设置的size     todo
+                    new Float32Array(
+                        (()=>{
+                            var x = 0.0;
+                            var y = -0.6;
+                            return [
+                                x + 0,y + 0,0,
+                                x + 1,y + 0,0,
+                                x + 1,y + 1,0,
+                            ]
+                        })()
+                    ),
+                )
+            }
+
+
+            if(0){
+                var x = 0.0;
+                var y = -0.6;
+                var z = 0.0;
+                var nx = 0.0;
+                var ny = 0.0;
+                var nz = 0.0;
+                var data = [
+                    //这些data 占用多少内存呢？
+                    //4(每个点的字节数) * 6（每个顶点的坐标单位数） * 6 （顶点数）
+
+                    //第1个三角形的顶点坐标
+                    x + 1,y + 0,z + 0, nx, ny, nz,
+                    x + 0,y + 0,z + 0, nx, ny, nz, //这个顶点是重复的
+                    x + 1,y + 1,z + 0, nx, ny, nz, //这个顶点是重复的
+
+
+                    //第2个三角形的顶点坐标
+                    x + 0,y + 0,z + 0, nx, ny, nz, //这个顶点是重复的
+                    x + 1,y + 1,z + 0, nx, ny, nz, //这个顶点是重复的
+                    x + 0,y + 1,z + 0, nx, ny, nz,
+
+                ];
+
+
+
+
+                //着色器内的变量
+                var v3PositionIndex;
+                //将js变量与c++变量绑定
+                gl.bindAttribLocation(program,v3PositionIndex,'v3Position');
+                //启用这个js变量
+                gl.enableVertexAttribArray(v3PositionIndex);
+
+            }
+
+        }
+    </script>
+</body>
+</html>
