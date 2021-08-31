@@ -48,7 +48,33 @@ position =  (x,y,z,1.0f)
             ->         ->
             ab     如  13（表示 从1到3）
 
+    运算（相同维度向量）
 
+        相加
+
+
+            公式
+                A = (X1，Y1)
+                B = (X2，Y2)
+
+                A + B=（X1+X2，Y1+Y2），
+                A - B=（X1-X2，Y1-Y2）
+
+            例如
+                a_position + u_offset
+                [-1,-1]  + [0.1, 0.2] = [-1+0.1, -1+0.2] = [-0.9, -0.8]
+
+        乘法
+            向量与数字相乘
+
+                公式
+                    A = (X1，Y1)
+                    A * 2=（X1*2，Y1*2）
+
+
+                例如
+
+                    [-1,-1]  * 2 = [-1*2, -1*2] = [-2, -2]
 
 
 
@@ -120,6 +146,27 @@ position =  (x,y,z,1.0f)
 <script type="x-shader/x-vertex">
 //向量（vector）
     vec4    //n维  浮点数  向量
+
+        vec4的参数含义
+        1. 代表空间坐标 (x,y,z,w)    w代表的含义 需要查一查 ？？？？？？？？
+            vector.xyzw 其中xyzw 可以任意组合
+        2. 代表颜色    (r,g,b,a)
+            vector.rgba 其中rgba 可以任意组合
+        3. 代表纹理坐标 (s,t,p,q)
+            vector.stpq 其中rgba 可以任意组合
+
+
+        访问参数
+            v.x 等价于 v.s，v.r，v[0]
+            v.y 等价于 v.t，v.g，v[1]
+            v.z 等价于 v.p，v.b，v[2]
+            v.w 等价于 v.q，v.a，v[3]
+
+
+            v.bgra  等价于 vec4(v.b, v.g, v.r, v.a)
+
+
+
     bvec4   //n维  布尔    向量
     ivec4   //n维  整数    向量
 
@@ -138,6 +185,13 @@ position =  (x,y,z,1.0f)
 
     varying    //负责在vertex 和 fragment 之间传递变量
 
+    float f = 1.0;  // use float
+    float f = float(1)  // cast the integer to a float
+
+
+//内置的特殊变量
+    gl_Position  //放置顶点坐标信息   	vec4
+
 
 /*
 内置的特殊变量
@@ -151,6 +205,30 @@ position =  (x,y,z,1.0f)
               gl_Position 放置顶点坐标信息   	vec4
 */
 
+
+//
+//highp mat4 m;
+
+
+/*
+精度限定
+    原因：
+
+        设备无法承受glsl产生大量的浮点数运算（进行光栅化着色时）
+        根据不同的设备来使用合适的精度.
+    类型
+        highp    高精度声明
+        mediump  中精度声明
+        lowp     低精度声明
+    例如
+
+
+        highp mat4 m;
+
+        设定默认精度，未指定精度的变量默认使用该精度( 在片元着色器(fragment shader)最开始的地方)
+        precision mediump float
+
+*/
 
 </script>
 
@@ -252,9 +330,9 @@ void main() {
 
    //投影矩阵坐标      （齐次坐标(由4个分量组成的矢量,能提高三维数据的效率)）
    gl_Position = vec4(
-        clipSpace,  // x
-         0,          // y
-         1           // z
+        clipSpace,
+         0,
+         1
       );
 
 
