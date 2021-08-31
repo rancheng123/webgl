@@ -12,6 +12,168 @@
 
 
 <!--
+    GLSL（图像库着色器语言）。
+        作用： 用逻辑来渲染图像
+
+
+
+
+矩阵乘法 nxm * mxp （n行m列 乘 m行p列）
+       1x4 * 4x4
+
+
+矩阵的运算 ************************
+
+所以是vec4而不是vec3
+
+position =  (x,y,z,1.0f)
+            (x,y,z,0.0f)   方向向量 ?????
+
+
+
+
+标量
+    有大小  无方向  的量
+
+向量（也称矢量） vector
+    有大小  有方向  的量
+
+    作用：
+
+        可以形象化地表示为带箭头的线段。
+
+            箭头所指：代表向量的方向；
+            线段长度：代表向量的大小。
+
+            ->         ->
+            ab     如  13（表示 从1到3）
+
+
+
+
+
+    四维矢量(四维时空)
+
+        四维矢量的分量分别为时间与三维位置。
+
+
+
+
+
+
+
+
+矩阵（Matrix）
+    参考链接  https://baike.baidu.com/item/%E7%9F%A9%E9%98%B5/18069
+
+    是一个复数或实数集合（按照长方阵列排列）
+
+    矩阵运算
+
+        将矩阵分解为简单矩阵的组合可以简化矩阵的运算。
+
+        矩阵计算算法
+
+    形式
+        m × n矩阵 （m行n列）
+
+
+
+
+
+
+    例子 (m行 n列的矩阵)
+                           a11    a12  ... a1n
+           矩阵A =          a21    a22  ... a2n
+                           a31    a32  ... a3n
+                           ...    ...      ...
+                           am1    am2  ... amn
+
+
+                             元素（简称为元）
+                                矩阵里的每个项称为元素，简称为元，
+
+                                (m,n)元 表示某个元素
+
+                                    a21位于矩阵A的第2行第1列，称为(2,1)元
+
+                          一些简写
+                                Amn       表示 矩阵A 拥有m行，n列
+
+                                (m,n)元   表示第m行第n列的元素
+
+
+                    矩阵类型
+                        1.n阶矩阵或n阶方阵
+
+                            行数与列数都等于n  的矩阵
+                        2.实矩阵
+                            元素是实数        的矩阵
+
+                        3.复矩阵
+                            元素是复数        的矩阵
+
+
+
+
+-->
+<script type="x-shader/x-vertex">
+//向量（vector）
+    vec4    //n维  浮点数  向量
+    bvec4   //n维  布尔    向量
+    ivec4   //n维  整数    向量
+
+
+//矩阵（matrix）
+    mat2    //2x2 浮点数矩阵
+    mat3    //3x3 浮点数矩阵
+    mat4    //4x4 浮点数矩阵
+
+
+
+//变量限定符
+    attribute  //从数据缓冲区中读取数据,用于保存顶点或法线数据   注意：只能用于vertex shader中,
+
+    uniform    //不变量（相当于常量吧）, 用来放置 变换矩阵，材质，光照参数(程序传递给shader的)
+
+    varying    //负责在vertex 和 fragment 之间传递变量
+
+
+/*
+内置的特殊变量
+    作用： 与硬件进行沟通
+    类型
+        1. input类型
+              负责 向硬件(渲染管线)发送数据.
+        2. output类型
+              负责 向程序回传数据,以便编程时需要.
+
+              gl_Position 放置顶点坐标信息   	vec4
+*/
+
+
+</script>
+
+<script type="x-shader/x-vertex">
+
+
+
+
+//四维向量
+vec4 a = vec4(1, 2, 3, 4);
+vec4 b = a * 2.0
+// b is now vec4(2, 4, 6, 8);
+
+mat4 a = 1;
+mat4 b = 2;
+mat4 c = a * b;
+
+vec4 v = 5;
+vec4 y = c * v;
+
+</script>
+
+<!--
     顶点着色器
         本质
             是一个函数（用户在 GLSL 中写的）。
@@ -33,14 +195,15 @@
 
 
 -->
-<!--2d 顶点着色器-->
+<!--2d 顶点着色器
+
+http://www.360doc.com/content/19/0710/09/7918060_847800832.shtml  glsl 中文手册
+-->
 <script id="2d-vertex-shader" type="x-shader/x-vertex">
 //openGL语法（glsl)
 //在显卡上执行，确定形状的各个坐标
 //大小写敏感；每条语句以分号结束。
 
-
-//vec1 vec3 vec4 是什么作用？？？？
 
 //声明属性(以a_ 开头， 表示属性)
 attribute vec2 a_position;
@@ -128,6 +291,7 @@ void main() {
 
 
 start-->
+
 <script id="2d-fragment-shader" type="x-shader/x-fragment">
     precision mediump float;
 
@@ -162,6 +326,11 @@ start-->
 
         1.多变变量（从顶点着色器中传递出来且被栅格化的值）
             如 varying vec4 v_color;
+
+                作用: 从顶点着色器往片段着色器中传递值(需要在顶点着色器和片段着色器中均设置匹配的多变变量)
+
+
+
         2.一致变量（参考顶点着色器）
 
         3.纹理（参考顶点着色器）
@@ -198,7 +367,7 @@ start-->
 
         var canvas = document.getElementById('canvas');
         var gl = canvas.getContext('webgl');
-        //'experiance-webgl' 试用版webgl
+        //'experimental-webgl' 试用版webgl
 
         //这个的作用是什么， 为什么会影响绘制的坐标系？？？？？？
         //设置可视区域（在canvas 内，但是有可能比canvas区域小）
@@ -532,6 +701,22 @@ start-->
             gl.vertexAttribPointer(colorLocation, 4, gl.FLOAT, false, 0, 0);
 
 
+
+
+
+            //纹理部分 但是没能成功
+                var tex = gl.createTexture();
+                gl.bindTexture(gl.TEXTURE_2D, tex);
+                var level = 0;
+                var width = 2;
+                var height = 1;
+                var data = new Uint8Array([255, 0, 0, 255, 0, 255, 0, 255]);
+                gl.texImage2D(gl.TEXTURE_2D, level, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
+                var unit = 5;  // Pick some texture unit
+                gl.activeTexture(gl.TEXTURE0 + unit);
+                gl.bindTexture(gl.TEXTURE_2D, tex);
+                var someSamplerLoc = gl.getUniformLocation(program, "u_texture");
+                gl.uniform1i(someSamplerLoc, unit);
 
 
 
